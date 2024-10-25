@@ -1,5 +1,6 @@
 package com.example.lab5_iot_20213170;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -84,7 +85,43 @@ public class MainActivity extends AppCompatActivity {
                 // Obtenemos el objetivo seleccionado en el Spinner
                 String objetivo = spinner_objetivo.getSelectedItem().toString();
 
-                // Luego de las validaciones:
+                // Luego de las validaciones, se hace el calculo del TMB + nivel de actividad:
+
+                double pesoKg = Double.parseDouble(peso);
+                double alturaCm = Double.parseDouble(altura);
+                int edadAnos = Integer.parseInt(edad);
+                double tmb;
+                if (genero.equals("Masculino")) {
+                    tmb = (10 * pesoKg) + (6.25 * alturaCm) - (5 * edadAnos) + 5;
+                } else { //Para Femenino
+                    tmb = (10 * pesoKg) + (6.25 * alturaCm) - (5 * edadAnos) - 161;
+                }
+
+                double caloriasTotales = tmb; //inicialmente
+                if (nivelActividad.equals("Sedentario")){
+                    caloriasTotales *= 1.2;
+                } else if (nivelActividad.equals("Ligera actividad")) {
+                    caloriasTotales *= 1.375;
+                } else if (nivelActividad.equals("Actividad moderada")) {
+                    caloriasTotales *= 1.55;
+                } else if (nivelActividad.equals("Alta actividad")) {
+                    caloriasTotales *= 1.725;
+                }else{
+                    caloriasTotales *= 1.9;
+                }
+
+                // Ajuste según el objetivo del usuario
+                if (objetivo.equals("Bajar de peso")) {
+                    caloriasTotales -= 300;
+                } else if (objetivo.equals("Subir de peso")) {
+                    caloriasTotales += 500;
+                }
+
+                // Mostrar el resultado al usuario
+                Toast.makeText(MainActivity.this,
+                        "Calorías necesarias por día: " + caloriasTotales,
+                        Toast.LENGTH_LONG).show();
+
                 Toast.makeText(MainActivity.this,
                         "Peso: " + peso + " kg, Altura: " + altura + " cm, Edad: " + edad +
                                 "\nGénero: " + genero +
@@ -92,10 +129,15 @@ public class MainActivity extends AppCompatActivity {
                                 "\nObjetivo: " + objetivo,
                         Toast.LENGTH_LONG).show();
 
+                Intent intent = new Intent(MainActivity.this, ConsumoActivity.class);
+                intent.putExtra("caloriasTotales", caloriasTotales);
+                startActivity(intent);
+
 
             }
         });
 
-
     }
+
+
 }
