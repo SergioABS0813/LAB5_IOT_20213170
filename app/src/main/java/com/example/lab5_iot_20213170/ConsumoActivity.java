@@ -1,5 +1,10 @@
 package com.example.lab5_iot_20213170;
 
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.content.Context;
+import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -13,13 +18,18 @@ import android.widget.Toast;
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 
 public class ConsumoActivity extends AppCompatActivity {
 
@@ -29,6 +39,7 @@ public class ConsumoActivity extends AppCompatActivity {
     TextView consumoTextView, calorias_por_consumir_textview, calorias_consumidas_textview;
     double caloriasConsumidas = 0;
     double caloriasTotales;
+    double caloriasPorConsumir = caloriasTotales;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,10 +52,8 @@ public class ConsumoActivity extends AppCompatActivity {
             return insets;
         });
 
-        // Obtener las calorías totales pasadas desde MainActivity
         caloriasTotales = getIntent().getDoubleExtra("caloriasTotales", 0.0);
 
-        // Mostrar las calorías en un TextView o realizar alguna acción
         TextView caloriasTextView = findViewById(R.id.calorias_textview);
         caloriasTextView.setText("Calorías necesarias por día: " + caloriasTotales);
 
@@ -66,27 +75,80 @@ public class ConsumoActivity extends AppCompatActivity {
         // FAB Ejercicios
 
         fab_ejercicios.setOnClickListener(v ->{
-
+            mostrarDialogoAgregarEjercicio();
         });
+
+        //Notificaciones
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                    "calorias_channel",
+                    "Notificaciones de Calorías",
+                    NotificationManager.IMPORTANCE_HIGH);
+            channel.setDescription("Notificación cuando se exceden las calorías diarias");
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
+        }
+
+        // Notificaciones en base a la hora
+        //Cabe destacar que solo funciona cuando en la hora del celular se tiene 14:00 y 19:00, con ese formato, el cual corresponde a horario 2 y 7 pm respectivamente.
+        programarNotificacion(8, 0, "Ingrese el consumo de alimento en el desayuno");
+        programarNotificacion(14, 0, "Ingrese el consumo de alimento en el almuerzo");
+        programarNotificacion(19, 0, "Ingrese el consumo de alimento en la cena");
 
 
     }
 
+    private void programarNotificacion(int hora, int minuto, String mensaje) {
+        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+
+        Intent intent = new Intent(this, NotificacionReceiver.class);
+        intent.putExtra("mensaje", mensaje);
+
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(this, hora * 100 + minuto, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.HOUR_OF_DAY, hora);
+        calendar.set(Calendar.MINUTE, minuto);
+        calendar.set(Calendar.SECOND, 0);
+
+        // Si la hora ya ha pasado, programa para el siguiente día
+        if (calendar.getTimeInMillis() < System.currentTimeMillis()) {
+            calendar.add(Calendar.DAY_OF_YEAR, 1);
+        }
+
+        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), AlarmManager.INTERVAL_DAY, pendingIntent);
+    }
+
+    private void mostrarNotificacionExcesoCalorias() {
+        double exceso = Math.abs(caloriasTotales - caloriasConsumidas);
+        String mensajeCompleto = "¡Has superado tu meta de calorías diarias! El exceso fue: " + exceso + " calorías. Como sugerencia, podrías hacer más ejercicio o reducir las calorías en la próxima comida. ¡Tú puedes!";
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "calorias_channel")
+                .setSmallIcon(R.drawable.baseline_notifications_active_24)
+                .setContentTitle("Límite de Calorías Excedido")
+                .setContentText("¡Has superado tu meta de calorías diarias!")
+                .setStyle(new NotificationCompat.BigTextStyle()
+                        .bigText(mensajeCompleto))  // Usar BigTextStyle para texto más largo: Se usó CHATGPT para la consulta de cómo hacer la notificación un poco más grande para el texto largo que contiene
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true);
+
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
+        notificationManager.notify(1, builder.build());
+    }
+
     private void mostrarDialogoAgregarComida() {
-        // Inflar el diseño del cuadro de diálogo personalizado
         LayoutInflater inflater = LayoutInflater.from(this);
         View dialogView = inflater.inflate(R.layout.dialog_agregar_comida, null);
 
-        // Crear el cuadro de diálogo
         AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
         dialogBuilder.setView(dialogView);
 
-        // Campos de entrada en el cuadro de diálogo
         Spinner spinnerComidas = dialogView.findViewById(R.id.spinner_comidas);
         EditText inputComida = dialogView.findViewById(R.id.input_comida);
         EditText inputCalorias = dialogView.findViewById(R.id.input_calorias);
 
-        // Definir las opciones del spinner (nombres de comidas predefinidas)
+        // Definir las opciones del spinner de comidas
         String[] comidasPredefinidas = {"Ninguna", "Pollo", "Huevo", "Pescado", "Yogurt", "Leche"};
         String[] caloriasPredefinidas = {"0", "155", "78", "216", "59", "105"};
 
@@ -103,7 +165,7 @@ public class ConsumoActivity extends AppCompatActivity {
                     inputComida.setText(comidasPredefinidas[position]);
                     inputCalorias.setText(caloriasPredefinidas[position]);
                 } else {
-                    inputComida.setText("");  // Limpiar el campo si selecciona "Ninguna"
+                    inputComida.setText("");
                     inputCalorias.setText("");
                 }
             }
@@ -114,7 +176,6 @@ public class ConsumoActivity extends AppCompatActivity {
             }
         });
 
-        // Configurar el cuadro de diálogo
         dialogBuilder
                 .setTitle("Añadir Comida")
                 .setPositiveButton("Añadir", (dialog, which) -> {
@@ -141,6 +202,47 @@ public class ConsumoActivity extends AppCompatActivity {
         dialog.show();
     }
 
+    private void mostrarDialogoAgregarEjercicio() {
+        // Inflar el diseño del cuadro de diálogo personalizado
+        LayoutInflater inflater = LayoutInflater.from(this);
+        View dialogView = inflater.inflate(R.layout.dialog_agregar_ejercicio, null);
+
+        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
+        dialogBuilder.setView(dialogView);
+
+        EditText inputEjercicio = dialogView.findViewById(R.id.input_ejercicio);
+        EditText inputCaloriasEjercicio = dialogView.findViewById(R.id.input_calorias_ejercicio);
+
+        dialogBuilder
+                .setTitle("Añadir Ejercicio")
+                .setPositiveButton("Añadir", (dialog, which) -> {
+
+                    String ejercicio = inputEjercicio.getText().toString().trim();
+                    String caloriasEjercicio = inputCaloriasEjercicio.getText().toString().trim();
+
+                    if (ejercicio.isEmpty() || caloriasEjercicio.isEmpty()) {
+                        Toast.makeText(ConsumoActivity.this, "Por favor ingrese ambos campos", Toast.LENGTH_SHORT).show();
+                    } else {
+                        caloriasConsumidas -= Double.parseDouble(caloriasEjercicio);
+                        calorias_consumidas_textview.setText("Has consumido: " + String.valueOf(caloriasConsumidas) + " calorías");
+                        caloriasPorConsumir += Double.parseDouble(caloriasEjercicio);
+                        calorias_por_consumir_textview.setText("Calorías por consumir hoy: " + String.valueOf(caloriasPorConsumir));
+
+                        /*Se está teniendo en cuenta el hecho de que cuando realice ejercicios BOTE calorías, por lo que las calorías que puede consumir
+                        aumenta ya que se RESTA la cantidad de calorías INGRESANTES (por consumo de alimentos) hasta el momento del día menos la cantidad
+                        que se botó haciendo ejercicios.*/
+
+                    }
+                })
+                .setNegativeButton("Cancelar", (dialog, which) -> {
+                    dialog.dismiss(); // Cerrar el cuadro de diálogo si se cancela
+                });
+
+        // Mostrar el cuadro de diálogo
+        AlertDialog dialog = dialogBuilder.create();
+        dialog.show();
+    }
+
 
     private void actualizarVistaConsumo() {
         if (comidaList.isEmpty()) {
@@ -151,16 +253,24 @@ public class ConsumoActivity extends AppCompatActivity {
             StringBuilder consumoInfo = new StringBuilder();
             for (int i = 0; i < comidaList.size(); i++) {
                 consumoInfo.append(String.valueOf(i+1)).append(") Comida: ").append(comidaList.get(i)).append(", Calorías: ").append(caloriasList.get(i)).append("\n").append("\n");
-                // Se actualiza el marcador de calorias restantes
-                caloriasConsumidas += Double.parseDouble(caloriasList.get(i));
+                // Se actualiza el marcador de calorias restantes (solo para el ultimo que se coloca debido a que ese es el recién agregado)
+                if (i == comidaList.size() - 1){
+                    caloriasConsumidas += Double.parseDouble(caloriasList.get(i));
+                }
             }
             consumoTextView.setText(consumoInfo.toString());
             calorias_consumidas_textview.setText("Has consumido: " + String.valueOf(caloriasConsumidas) + " calorías");
             if(caloriasTotales-caloriasConsumidas < 0){
                 calorias_por_consumir_textview.setText("¡Superaste la meta de calorías!");
+                mostrarNotificacionExcesoCalorias();
+
             }else{
-                calorias_por_consumir_textview.setText("Calorías por consumir hoy: " + String.valueOf(caloriasTotales-caloriasConsumidas));
+                caloriasPorConsumir = caloriasTotales - caloriasConsumidas;
+                calorias_por_consumir_textview.setText("Calorías por consumir hoy: " + String.valueOf(caloriasPorConsumir));
             }
+
+            /* En este caso, se tiene en cuenta la suma total de calorías INGRESANTES debido al consumo de algún alimento, esta cantidad es lo que
+             se le restará a la cantidad de calorías totales que puede comer en el día */
 
         }
     }
