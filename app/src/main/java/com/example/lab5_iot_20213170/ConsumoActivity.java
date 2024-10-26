@@ -96,8 +96,41 @@ public class ConsumoActivity extends AppCompatActivity {
         programarNotificacion(14, 0, "Ingrese el consumo de alimento en el almuerzo");
         programarNotificacion(19, 0, "Ingrese el consumo de alimento en la cena");
 
+        // Notificación al final del día si no ingresó comida alguna
+        noIngresoComidaNotificacion();
+
 
     }
+
+    private void noIngresoComidaNotificacion() {
+        if (comidaList.isEmpty()) {  // Verificamos si no se ha ingresado ningún alimento
+            AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+            Intent intent = new Intent(this, NotificacionReceiver.class);
+            intent.putExtra("tipo", "recordatorio_no_comida"); // Identificar el tipo de notificación
+            intent.putExtra("mensaje", "No se ingresó ninguna comida durante el día, mañana vas con todo. ¡Tú puedes, vamos!");
+
+            PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                    this,
+                    1,
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+            );
+
+            // Contando con el formato 11:59 pm
+            Calendar calendar = Calendar.getInstance();
+            calendar.set(Calendar.HOUR_OF_DAY, 23);
+            calendar.set(Calendar.MINUTE, 59);
+            calendar.set(Calendar.SECOND, 0);
+
+            // Para que se repita diariamente
+            if (alarmManager != null) {
+                alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pendingIntent);
+            }
+        }
+    }
+
+
+
 
     private void programarNotificacion(int hora, int minuto, String mensaje) {
         AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
