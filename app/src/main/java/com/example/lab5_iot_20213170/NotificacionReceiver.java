@@ -12,26 +12,25 @@ public class NotificacionReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         String mensaje = intent.getStringExtra("mensaje");
+        String tipo = intent.getStringExtra("tipo");
+
+        String titulo = "Recordatorio de Consumo de Alimento"; // Título predeterminado
+        if ("motivacion".equals(tipo)) {
+            titulo = "Notificación de Motivación";  // Cambia el título si es motivación
+        } else if ("recordatorio_no_comida".equals(tipo)) {
+            titulo = "Recordatorio de Comida";
+            mensaje = "No se ingresó ninguna comida durante el día, mañana vas con todo. ¡Tú puedes, vamos!";
+        }
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, "calorias_channel")
-                .setSmallIcon(R.drawable.baseline_notifications_active_24) // Cambia a tu icono de notificación
-                .setContentTitle("Recordatorio de Consumo de Alimento")
+                .setSmallIcon(R.drawable.baseline_notifications_active_24)
+                .setContentTitle(titulo)
                 .setContentText(mensaje)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true);
 
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
         notificationManager.notify((int) System.currentTimeMillis(), builder.build());
-
-        // Se recepciona lo enviado en ConsumoActivity
-        String tipo = intent.getStringExtra("tipo");
-
-        if ("recordatorio_no_comida".equals(tipo)) {
-            ConsumoActivity consumoActivity = new ConsumoActivity();
-            if (consumoActivity.comidaList.isEmpty()) {
-                mostrarNotificacion(context);
-            }
-        }
     }
 
     private void mostrarNotificacion(Context context) {

@@ -11,6 +11,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -40,6 +41,8 @@ public class ConsumoActivity extends AppCompatActivity {
     double caloriasConsumidas = 0;
     double caloriasTotales;
     double caloriasPorConsumir = caloriasTotales;
+    int intervaloMinutos;
+    ImageView back_imageview;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,7 +55,22 @@ public class ConsumoActivity extends AppCompatActivity {
             return insets;
         });
 
+        back_imageview = findViewById(R.id.back_imageview);
+
+        back_imageview.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                cancelarNotificacionesMotivacion();
+                finish();
+            }
+        });
+
         caloriasTotales = getIntent().getDoubleExtra("caloriasTotales", 0.0);
+        intervaloMinutos = getIntent().getIntExtra("intervaloMinutos", 0);
+
+        if (intervaloMinutos > 0) {
+            programarNotificacionesMotivacion();
+        }
 
         TextView caloriasTextView = findViewById(R.id.calorias_textview);
         caloriasTextView.setText("Calorías necesarias por día: " + caloriasTotales);
@@ -100,6 +118,39 @@ public class ConsumoActivity extends AppCompatActivity {
         noIngresoComidaNotificacion();
 
 
+    }
+
+    private void cancelarNotificacionesMotivacion() {
+        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        Intent intent = new Intent(this, NotificacionReceiver.class);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                this, 2, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+        if (alarmManager != null) {
+            alarmManager.cancel(pendingIntent); // Cancela la alarma programada
+        }
+    }
+
+    private void programarNotificacionesMotivacion() {
+        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+
+        // Intent que se disparará con cada intervalo
+        Intent intent = new Intent(this, NotificacionReceiver.class);
+        intent.putExtra("mensaje", "¡Sigue adelante! Estás un paso más cerca de tu objetivo.");
+        intent.putExtra("tipo", "motivacion");
+
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                this, 2, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+
+        long intervaloEnMillis = intervaloMinutos * 60 * 1000L; // convierte minutos a milisegundos
+        long tiempoInicio = System.currentTimeMillis() + intervaloEnMillis;
+
+        //Repetición de la notificación
+        if (alarmManager != null) {
+            alarmManager.setRepeating(
+                    AlarmManager.RTC_WAKEUP, tiempoInicio, intervaloEnMillis, pendingIntent);
+        }
     }
 
     private void noIngresoComidaNotificacion() {

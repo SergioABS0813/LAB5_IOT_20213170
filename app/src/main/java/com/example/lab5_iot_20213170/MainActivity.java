@@ -21,11 +21,12 @@ import androidx.core.view.WindowInsetsCompat;
 public class MainActivity extends AppCompatActivity {
 
     Button btn_hacia_objetivo;
-    EditText input_peso, input_altura, input_edad;
+    EditText input_peso, input_altura, input_edad, input_intervalo_motivacion;
     RadioGroup radioGroup_genero;
     Spinner spinner_nivel_actividad, spinner_objetivo;
     CheckBox checkbox_motivacion;
     LinearLayout layout_intervalo_tiempo;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,6 +48,7 @@ public class MainActivity extends AppCompatActivity {
         spinner_objetivo = findViewById(R.id.spinner_objetivo);
         checkbox_motivacion = findViewById(R.id.checkbox_motivacion);
         layout_intervalo_tiempo = findViewById(R.id.layout_intervalo_tiempo);
+        input_intervalo_motivacion = findViewById(R.id.input_intervalo_motivacion);
 
 
         btn_hacia_objetivo.setOnClickListener(new View.OnClickListener() {
@@ -138,12 +140,33 @@ public class MainActivity extends AppCompatActivity {
 
                 Intent intent = new Intent(MainActivity.this, ConsumoActivity.class);
                 intent.putExtra("caloriasTotales", caloriasTotales);
+
+                if (checkbox_motivacion.isChecked()) {
+                    String intervalo = input_intervalo_motivacion.getText().toString();
+                    if (intervalo.isEmpty()) {
+                        Toast.makeText(MainActivity.this, "Por favor ingrese un intervalo para las notificaciones de motivación.", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    int intervaloMinutos;
+                    try {
+                        intervaloMinutos = Integer.parseInt(intervalo); //Conversión exitosa
+                        Toast.makeText(MainActivity.this, "Notificaciones de motivación activadas cada " + intervaloMinutos + " minutos", Toast.LENGTH_SHORT).show();
+                        intent.putExtra("intervaloMinutos", intervaloMinutos);
+                    } catch (NumberFormatException e) {
+                        // No es entero
+                        Toast.makeText(MainActivity.this, "Por favor ingrese un número entero en minutos.", Toast.LENGTH_SHORT).show();
+                    }
+
+
+
+                }
                 startActivity(intent);
 
 
             }
         });
 
+        //Para que pueda ser visible solo cuando el checkbox este seleccionado
         boolean motivacionSeleccionada = checkbox_motivacion.isChecked();
 
         checkbox_motivacion.setOnCheckedChangeListener((buttonView, isChecked) -> {
