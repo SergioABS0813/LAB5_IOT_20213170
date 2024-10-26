@@ -260,6 +260,8 @@ public class ConsumoActivity extends AppCompatActivity {
                         calorias_consumidas_textview.setText("Has consumido: " + String.valueOf(caloriasConsumidas) + " calorías");
                         caloriasPorConsumir += Double.parseDouble(caloriasEjercicio);
                         calorias_por_consumir_textview.setText("Calorías por consumir hoy: " + String.valueOf(caloriasPorConsumir));
+                        Toast.makeText(ConsumoActivity.this, "Ustes ha hecho ejercicio, por lo que sus calorías ha disminuido " + Double.parseDouble(caloriasEjercicio) + " calorías", Toast.LENGTH_SHORT).show();
+
 
                         /*Se está teniendo en cuenta el hecho de que cuando realice ejercicios BOTE calorías, por lo que las calorías que puede consumir
                         aumenta ya que se RESTA la cantidad de calorías INGRESANTES (por consumo de alimentos) hasta el momento del día menos la cantidad

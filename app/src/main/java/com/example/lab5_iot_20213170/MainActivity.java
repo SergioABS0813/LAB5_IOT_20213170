@@ -4,7 +4,9 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.Spinner;
@@ -22,6 +24,8 @@ public class MainActivity extends AppCompatActivity {
     EditText input_peso, input_altura, input_edad;
     RadioGroup radioGroup_genero;
     Spinner spinner_nivel_actividad, spinner_objetivo;
+    CheckBox checkbox_motivacion;
+    LinearLayout layout_intervalo_tiempo;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,6 +45,9 @@ public class MainActivity extends AppCompatActivity {
         radioGroup_genero = findViewById(R.id.radioGroup_genero);
         spinner_nivel_actividad = findViewById(R.id.spinner_nivel_actividad);
         spinner_objetivo = findViewById(R.id.spinner_objetivo);
+        checkbox_motivacion = findViewById(R.id.checkbox_motivacion);
+        layout_intervalo_tiempo = findViewById(R.id.layout_intervalo_tiempo);
+
 
         btn_hacia_objetivo.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -134,6 +141,16 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(intent);
 
 
+            }
+        });
+
+        boolean motivacionSeleccionada = checkbox_motivacion.isChecked();
+
+        checkbox_motivacion.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                layout_intervalo_tiempo.setVisibility(View.VISIBLE); // Mostrar el layout
+            } else {
+                layout_intervalo_tiempo.setVisibility(View.GONE); // Ocultar el layout
             }
         });
 
